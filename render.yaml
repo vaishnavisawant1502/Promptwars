@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: hydrosense-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: ALLOW_REGISTRATION
+        value: "true"
