@@ -3,6 +3,7 @@
 (function () {
   const TOKEN_KEY = 'hydro_sentinel_token_v1';
   const USER_KEY = 'hydro_sentinel_user_v1';
+  const API_BASE_KEY = 'hydro_sentinel_api_base_v1';
   const K = {
     alerts: 'hydro_sentinel_alerts_v1',
     thresholds: 'hydro_sentinel_thresholds_v1',
@@ -13,9 +14,15 @@
   let telemetryQueue = [];
 
   const token = () => localStorage.getItem(TOKEN_KEY);
+  const getApiBase = () => {
+    const custom = window.HYDRO_API_BASE || localStorage.getItem(API_BASE_KEY) || localStorage.getItem('hydro_api_base');
+    return custom ? custom.replace(/\/+$/, '') : '';
+  };
 
   async function req(path, opts = {}) {
-    const res = await fetch('/api' + path, {
+    const base = getApiBase();
+    const url = (base ? base + '/api' : '/api') + path;
+    const res = await fetch(url, {
       method: opts.method || 'GET',
       headers: Object.assign({ 'Content-Type': 'application/json' }, token() ? { Authorization: 'Bearer ' + token() } : {}),
       body: opts.body ? JSON.stringify(opts.body) : undefined
@@ -143,6 +150,19 @@
       b.textContent = 'Logout';
       b.onclick = logout;
       bar.appendChild(b);
+    } else {
+      const b = document.createElement('button');
+      b.textContent = 'Connect Backend';
+      b.onclick = () => {
+        const curr = localStorage.getItem(API_BASE_KEY) || '';
+        const val = prompt('Enter your Render Backend URL (e.g. https://hydrosense-backend.onrender.com):', curr);
+        if (val !== null) {
+          if (val.trim()) localStorage.setItem(API_BASE_KEY, val.trim());
+          else localStorage.removeItem(API_BASE_KEY);
+          location.reload();
+        }
+      };
+      bar.appendChild(b);
     }
     document.body.appendChild(bar);
   }
@@ -151,7 +171,8 @@
     injectStyles();
     // Is the backend reachable? (file:// or no server -> offline mode)
     try {
-      const h = await fetch('/api/health');
+      const base = getApiBase();
+      const h = await fetch((base ? base + '/api' : '/api') + '/health');
       if (!h.ok) throw new Error('no backend');
     } catch {
       offline = true;
@@ -166,5 +187,5 @@
     userBar();
   }
 
-  window.HydroAPI = { ready, resetAlerts, pushAlerts, pushSettings, queueTelemetry, logout, req };
+  window.HydroAPI = { ready, resetAlerts, pushAlerts, pushSettings, queueTelemetry, logout, req, setApiBase: (url) => { localStorage.setItem(API_BASE_KEY, url); location.reload(); } };
 })();
