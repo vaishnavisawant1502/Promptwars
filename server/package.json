@@ -1,0 +1,25 @@
+{
+  "name": "hydrosense-sentinel-server",
+  "version": "1.0.0",
+  "description": "Express + MongoDB backend for HydroSense Sentinel",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed.js",
+    "test": "node --test test/detection.test.js test/validate.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.0"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  }
+}

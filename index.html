@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HydroSense Sentinel — Water-Waste Monitoring Dashboard</title>
+  <meta name="description"
+    content="HydroSense Sentinel is a water-waste monitoring dashboard for hostel maintenance teams, analyzing simulated water-flow readings to detect anomalies and prioritize inspections.">
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN with fallback handling -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+  <!-- Offline/CDN Failure Notification Banner -->
+  <div id="chart-fallback-banner" class="notice-banner hidden" role="status" aria-live="polite">
+    <div class="notice-content">
+      <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>Chart graphics library could not be loaded from CDN. Detailed data tables and live numerical metrics are
+        active as fallback.</span>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <!-- Deep Navy Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar" aria-label="Main Navigation">
+      <div class="brand-header">
+        <div class="brand-logo-wrap">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+            <path d="M12 11.5v4"></path>
+            <path d="M10 13.5l4-4"></path>
+          </svg>
+          <div class="brand-text">
+            <h1 class="brand-title">HydroSense</h1>
+            <span class="brand-subtitle">SENTINEL</span>
+          </div>
+        </div>
+        <div class="demo-badge-wrap">
+          <span class="badge badge-simulated" id="sidebar-demo-badge">
+            <span class="pulse-dot"></span> SIMULATED DEMO DATA
+          </span>
+        </div>
+      </div>
+
+      <nav class="nav-menu" role="tablist" aria-label="Dashboard views">
+        <button class="nav-item active" data-view="overview" role="tab" aria-selected="true" id="nav-tab-overview">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          </svg>
+          <span class="nav-label">Overview</span>
+        </button>
+
+        <button class="nav-item" data-view="live" role="tab" aria-selected="false" id="nav-tab-live">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="nav-label">Live Monitor</span>
+          <span class="nav-pill pulse-live" id="nav-live-indicator">LIVE</span>
+        </button>
+
+        <button class="nav-item" data-view="alerts" role="tab" aria-selected="false" id="nav-tab-alerts">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="nav-label">Alerts &amp; Investigations</span>
+          <span class="nav-counter" id="nav-alert-counter">0</span>
+        </button>
+
+        <button class="nav-item" data-view="insights" role="tab" aria-selected="false" id="nav-tab-insights">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"></path>
+            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
+          </svg>
+          <span class="nav-label">Water Insights</span>
+        </button>
+
+        <button class="nav-item" data-view="settings" role="tab" aria-selected="false" id="nav-tab-settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+          <span class="nav-label">Settings</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Status & Quick Metrics -->
+      <div class="sidebar-footer">
+        <div class="system-status-card">
+          <div class="status-row">
+            <span class="status-indicator-dot online"></span>
+            <span class="status-text">Engine: <strong>Active</strong></span>
+          </div>
+          <div class="status-subtext" id="sim-engine-tick-info">Tick: 2.5s | 4 Zones Active</div>
+          <div class="status-subtext" id="sim-timestamp">Time: --:--:--</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="main-workspace">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="page-title-area">
+            <h2 class="view-title" id="page-title">Overview Dashboard</h2>
+            <p class="view-description" id="page-description">Monitoring 4 hostel zones for suspicious water loss and
+              flow anomalies.</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Simulation Status Pill -->
+          <div class="sim-pill" id="global-sim-pill" title="Status of the background flow simulator">
+            <span class="pulse-dot active" id="sim-pulse-dot"></span>
+            <span id="sim-state-text">Simulating</span>
+          </div>
+
+          <!-- Quick Simulation Controls -->
+          <div class="quick-sim-controls" aria-label="Simulation Controls">
+            <button class="btn btn-sm btn-outline" id="global-sim-toggle-btn" title="Pause or Resume simulation loop">
+              <svg class="btn-icon" id="sim-play-pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              <span id="global-sim-toggle-label">Pause</span>
+            </button>
+
+            <button class="btn btn-sm btn-outline btn-warning" id="global-trigger-scenario-btn"
+              title="Simulate a sudden nighttime toilet flapper leak">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span>Test Leak</span>
+            </button>
+          </div>
+
+          <!-- Period Selector -->
+          <div class="period-select-wrap">
+            <label for="period-selector" class="sr-only">Demo Period</label>
+            <select id="period-selector" class="form-select select-sm" aria-label="Select demo period">
+              <option value="today" selected>Today (Current 24h)</option>
+              <option value="yesterday">Yesterday (Baseline)</option>
+              <option value="week">Past 7 Days (Aggregate)</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Container -->
+      <main class="content-container">
+
+        <!-- ================= VIEW 1: OVERVIEW ================= -->
+        <section id="view-overview" class="view-panel active" role="tabpanel" aria-labelledby="nav-tab-overview">
+          <!-- Hero Notice -->
+          <div class="sim-banner">
+            <div class="sim-banner-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <div class="sim-banner-body">
+              <strong>Demo mode</strong> · simulated flow meters on 4 hostel zones
+            </div>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Estimated Consumption</span>
+                <span class="stat-icon-wrap teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value" id="overview-total-consumption">-- Litres</div>
+              <div class="stat-meta">
+                <span class="meta-label">Selected Period Total:</span>
+                <span class="meta-val" id="overview-consumption-meta">Calculating...</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Active Unresolved Alerts</span>
+                <span class="stat-icon-wrap rose">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value text-rose" id="overview-active-alerts">0</div>
+              <div class="stat-meta">
+                <span class="meta-val" id="overview-alerts-breakdown">0 Critical • 0 Warning</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Estimated Potential Loss</span>
+                <span class="stat-icon-wrap amber">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value text-amber" id="overview-potential-loss">-- Litres</div>
+              <div class="stat-meta">
+                <span class="badge badge-subtle-amber" id="overview-loss-percentage">0% of total flow</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Monitored Zones</span>
+                <span class="stat-icon-wrap navy">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value" id="overview-zone-count">4 Zones</div>
+              <div class="stat-meta">
+                <span class="status-indicator-dot online"></span>
+                <span class="meta-val" id="overview-zones-status">All 4 telemetry feeds healthy</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="grid-2-col">
+            <!-- Time-Series Overview Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Flow Rate by Zone</h3>
+                </div>
+                <div class="chart-legend-custom" id="overview-chart-legend"></div>
+              </div>
+              <div class="card-body chart-body">
+                <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="overviewFlowChart"></canvas>
+                  <div class="chart-fallback hidden" id="overview-chart-fallback">
+                    <p>Flow chart preview unavailable. Check zone breakdown table below.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Water Use Breakdown Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Consumption Distribution</h3>
+                </div>
+              </div>
+              <div class="card-body chart-body donut-chart-body">
+                <div class="chart-container donut-wrap" style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="overviewBreakdownChart"></canvas>
+                  <div class="chart-fallback hidden" id="breakdown-chart-fallback">
+                    <p>Distribution chart preview unavailable.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Recent Alerts & System Status Panel -->
+          <div class="grid-layout-alerts-status">
+            <!-- Prioritized Recent Alerts -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Priority Investigation Queue</h3>
+                </div>
+                <button class="btn btn-sm btn-outline" id="overview-view-all-alerts-btn">
+                  View All (<span id="overview-alerts-total-count">0</span>)
+                </button>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="data-table" id="overview-alerts-table" aria-label="Recent Alerts Table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Rank</th>
+                        <th scope="col">Severity</th>
+                        <th scope="col">Zone</th>
+                        <th scope="col">Detection Pattern</th>
+                        <th scope="col">Est. Excess Water</th>
+                        <th scope="col">Detected</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="overview-alerts-tbody">
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                  <div id="overview-alerts-empty" class="empty-state hidden">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                    <h4>All Clear! No Active Anomalies</h4>
+                    <p>All zone telemetry is within acceptable historical baseline limits.</p>
+                    <button class="btn btn-sm btn-outline mt-2" id="overview-empty-trigger-scenario-btn">Inject Test
+                      Scenario</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- System Status Panel -->
+            <div class="card system-panel-card">
+              <div class="card-header">
+                <h3 class="card-title">System Status &amp; Telemetry</h3>
+              </div>
+              <div class="card-body">
+                <ul class="system-checklist">
+                  <li class="checklist-item">
+                    <span class="status-indicator-dot online"></span>
+                    <div class="checklist-info">
+                      <div class="checklist-title">Deterministic Data Generator</div>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <span class="status-indicator-dot online"></span>
+                    <div class="checklist-info">
+                      <div class="checklist-title">Rule-Based Anomaly Evaluator</div>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <span class="status-indicator-dot online"></span>
+                    <div class="checklist-info">
+                      <div class="checklist-title">Local Storage Persistence</div>
+                      <div class="checklist-desc" id="status-storage-info">Enabled • Alert statuses &amp; thresholds
+                        saved</div>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <span class="status-indicator-dot online"></span>
+                    <div class="checklist-info">
+                      <div class="checklist-title">Telemetry Integrity</div>
+                    </div>
+                  </li>
+                </ul>
+
+                <div class="facility-notice-box">
+                  <div class="facility-notice-title">Hostel Maintenance Protocol</div>
+                  <p class="facility-notice-text">
+                    Critical alerts (such as sustained overnight flow > 10 L/min for &gt; 15 min) suggest stuck urinal
+                    flush valves or toilet flappers. Maintenance personnel should check Block A and Common Washrooms
+                    first.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= VIEW 2: LIVE MONITOR ================= -->
+        <section id="view-live" class="view-panel" role="tabpanel" aria-labelledby="nav-tab-live">
+          <!-- Live Monitor Controls Bar -->
+          <div class="card live-controls-card">
+            <div class="live-controls-wrap">
+              <!-- Zone Picker -->
+              <div class="control-group">
+                <label for="live-zone-select" class="control-label">Monitored Zone:</label>
+                <select id="live-zone-select" class="form-select">
+                  <option value="all">All Zones (Aggregated Stream)</option>
+                  <option value="hostel_a" selected>Hostel Block A (250 Residents)</option>
+                  <option value="hostel_b">Hostel Block B (220 Residents)</option>
+                  <option value="kitchen">Hostel Kitchen &amp; Mess</option>
+                  <option value="washrooms">Common Washrooms</option>
+                </select>
+              </div>
+
+              <!-- Stream State Controls -->
+              <div class="live-buttons-wrap">
+                <button class="btn btn-primary" id="live-stream-toggle-btn">
+                  <svg class="btn-icon" id="live-stream-toggle-icon" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                  </svg>
+                  <span id="live-stream-toggle-label">Pause Stream</span>
+                </button>
+
+                <div class="scenario-actions">
+                  <button class="btn btn-warning" id="live-generate-scenario-btn"
+                    title="Simulate a continuous overnight cistern leak in Hostel Block A (+12.5 L/min)">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                      </path>
+                    </svg>
+                    <span>Test Overnight Leak</span>
+                  </button>
+
+                  <button class="btn btn-outline btn-rose" id="live-test-high-btn"
+                    title="Simulate sustained runaway high-flow in Hostel Kitchen exceeding the daytime ceiling">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    <span>Test High Runaway Flow</span>
+                  </button>
+
+                  <button class="btn btn-outline" id="live-test-spike-btn"
+                    title="Simulate a brief 2-minute shower surge in Hostel Block B that clears without alerting">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                    <span>Test Short Spike</span>
+                  </button>
+
+                  <button class="btn btn-outline" id="live-restore-normal-btn"
+                    title="Clear injected leaks and restore nominal baseline">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    <span>Restore Normal Baseline</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Metrics Indicators -->
+          <div class="live-stat-strip">
+            <div class="live-stat-cell">
+              <span class="live-stat-label">Current Flow Rate (Simulated)</span>
+              <div class="live-stat-digit" id="live-current-flow">0.0 <span class="unit-label">L/min</span></div>
+              <span class="live-stat-sub" id="live-flow-trend">Normal baseline variance</span>
+            </div>
+
+            <div class="live-stat-cell">
+              <span class="live-stat-label">Zone Status</span>
+              <div class="live-status-pill normal" id="live-status-indicator">
+                <span class="status-indicator-dot"></span>
+                <span id="live-status-text">Normal Operation</span>
+              </div>
+              <span class="live-stat-sub" id="live-expected-baseline">Expected: 0.8 – 2.0 L/min</span>
+            </div>
+
+            <div class="live-stat-cell">
+              <span class="live-stat-label">Est. Excess Rate</span>
+              <div class="live-stat-digit text-teal" id="live-excess-flow">0.0 <span class="unit-label">L/min</span>
+              </div>
+              <span class="live-stat-sub" id="live-excess-sub">No suspicious delta detected</span>
+            </div>
+
+            <div class="live-stat-cell">
+              <span class="live-stat-label">Cumulative Session Loss</span>
+              <div class="live-stat-digit text-amber" id="live-session-loss">0.0 <span class="unit-label">Litres</span>
+              </div>
+              <span class="live-stat-sub">Est. excess from confirmed anomalies (simulated)</span>
+            </div>
+          </div>
+
+          <!-- Live Transient Spike & Excursion Status Tracker -->
+          <div class="transient-status-bar" id="live-transient-status-bar">
+            <div class="transient-status-left">
+              <span class="transient-tag normal" id="live-transient-tag">Normal</span>
+              <span id="live-transient-message">All 4 zones telemetry within baseline limits. No suspicious excursions.</span>
+            </div>
+            <div class="transient-status-right">
+              <span id="live-transient-timer" style="font-family: var(--font-mono); font-weight: 600; font-size: 0.76rem;">Threshold Trigger: Sustained &gt; 15m</span>
+            </div>
+          </div>
+
+          <!-- Real-Time Telemetry Graph -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title" id="live-chart-title">Real-Time Flow Telemetry (Hostel Block A)</h3>
+              </div>
+              <div class="live-chart-tags">
+                <span class="telemetry-badge" id="live-telemetry-badge">
+                  <span class="pulse-dot"></span> Telemetry Active
+                </span>
+                <span class="threshold-legend-tag">
+                  <span class="dash-line-swatch"></span> Anomaly Trigger Ceiling
+                </span>
+              </div>
+            </div>
+            <div class="card-body chart-body">
+              <div class="chart-container" style="position: relative; height: 350px; width: 100%;">
+                <canvas id="liveFlowChart"></canvas>
+                <div class="chart-fallback hidden" id="live-chart-fallback">
+                  <p>Live Chart fallback: Flow rate is currently <strong id="fallback-flow-val">0.0 L/min</strong>.</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer live-chart-footer">
+              <div class="sim-disclaimer-text">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="info-icon-sm">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                Illustrative simulation for hackathon demonstration. All sensor packets are synthesized client-side.
+              </div>
+              <div class="stream-speed-label">Engine Speed: <strong id="live-speed-display">1x (2.5s Ticks)</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone Technical Profile Cards -->
+          <div class="zone-details-grid">
+            <div class="card zone-profile-card">
+              <div class="card-header">
+                <h4 class="zone-profile-name">Hostel Block A</h4>
+                <span class="badge badge-normal" id="zone-badge-hostel_a">Nominal</span>
+              </div>
+              <div class="card-body">
+                <div class="zone-metric-row"><span>Type:</span><strong>Residential 5-Floor</strong></div>
+                <div class="zone-metric-row"><span>Occupancy:</span><strong>250 Students</strong></div>
+                <div class="zone-metric-row"><span>Night Baseline:</span><strong>0.8 – 1.8 L/min</strong></div>
+                <div class="zone-metric-row"><span>Current Flow:</span><strong id="card-flow-hostel_a">1.2
+                    L/min</strong></div>
+              </div>
+            </div>
+
+            <div class="card zone-profile-card">
+              <div class="card-header">
+                <h4 class="zone-profile-name">Hostel Block B</h4>
+                <span class="badge badge-normal" id="zone-badge-hostel_b">Nominal</span>
+              </div>
+              <div class="card-body">
+                <div class="zone-metric-row"><span>Type:</span><strong>Residential 4-Floor</strong></div>
+                <div class="zone-metric-row"><span>Occupancy:</span><strong>220 Students</strong></div>
+                <div class="zone-metric-row"><span>Night Baseline:</span><strong>0.6 – 1.5 L/min</strong></div>
+                <div class="zone-metric-row"><span>Current Flow:</span><strong id="card-flow-hostel_b">0.9
+                    L/min</strong></div>
+              </div>
+            </div>
+
+            <div class="card zone-profile-card">
+              <div class="card-header">
+                <h4 class="zone-profile-name">Hostel Kitchen &amp; Mess</h4>
+                <span class="badge badge-normal" id="zone-badge-kitchen">Nominal</span>
+              </div>
+              <div class="card-body">
+                <div class="zone-metric-row"><span>Type:</span><strong>Commercial Kitchen</strong></div>
+                <div class="zone-metric-row"><span>Capacity:</span><strong>600 Meals / Sitting</strong></div>
+                <div class="zone-metric-row"><span>Night Baseline:</span><strong>0.0 – 0.4 L/min</strong></div>
+                <div class="zone-metric-row"><span>Current Flow:</span><strong id="card-flow-kitchen">0.1 L/min</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="card zone-profile-card">
+              <div class="card-header">
+                <h4 class="zone-profile-name">Common Washrooms</h4>
+                <span class="badge badge-normal" id="zone-badge-washrooms">Nominal</span>
+              </div>
+              <div class="card-body">
+                <div class="zone-metric-row"><span>Type:</span><strong>Public Facilities</strong></div>
+                <div class="zone-metric-row"><span>Fixtures:</span><strong>12 Cisterns, 8 Urinals</strong></div>
+                <div class="zone-metric-row"><span>Night Baseline:</span><strong>0.1 – 0.5 L/min</strong></div>
+                <div class="zone-metric-row"><span>Current Flow:</span><strong id="card-flow-washrooms">0.3
+                    L/min</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= VIEW 3: ALERTS & INVESTIGATIONS ================= -->
+        <section id="view-alerts" class="view-panel" role="tabpanel" aria-labelledby="nav-tab-alerts">
+          <!-- Filters & Action Bar -->
+          <div class="card filters-card">
+            <div class="filters-grid">
+              <!-- Search Input -->
+              <div class="filter-item filter-search">
+                <label for="alert-search-input" class="filter-label">Search Alerts</label>
+                <div class="search-input-wrap">
+                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="alert-search-input" class="form-input"
+                    placeholder="Search by ID, Zone, Rule, or Keywords..." aria-label="Search alerts">
+                  <button class="clear-search-btn hidden" id="clear-search-btn" aria-label="Clear search">×</button>
+                </div>
+              </div>
+
+              <!-- Severity Filter -->
+              <div class="filter-item">
+                <label for="filter-severity" class="filter-label">Severity</label>
+                <select id="filter-severity" class="form-select" aria-label="Filter by severity">
+                  <option value="all">All Severities</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+
+              <!-- Zone Filter -->
+              <div class="filter-item">
+                <label for="filter-zone" class="filter-label">Zone</label>
+                <select id="filter-zone" class="form-select" aria-label="Filter by zone">
+                  <option value="all">All Zones</option>
+                  <option value="Hostel Block A">Hostel Block A</option>
+                  <option value="Hostel Block B">Hostel Block B</option>
+                  <option value="Hostel Kitchen">Hostel Kitchen</option>
+                  <option value="Common Washrooms">Common Washrooms</option>
+                </select>
+              </div>
+
+              <!-- Status Filter -->
+              <div class="filter-item">
+                <label for="filter-status" class="filter-label">Status</label>
+                <select id="filter-status" class="form-select" aria-label="Filter by status">
+                  <option value="all">All Statuses</option>
+                  <option value="unresolved" selected>Unresolved (All Active)</option>
+                  <option value="new">New</option>
+                  <option value="acknowledged">Acknowledged</option>
+                  <option value="investigating">Investigating</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Filter Status Bar -->
+            <div class="filter-results-bar">
+              <span class="filter-summary-text" id="filter-summary-text">Showing 0 of 0 alerts</span>
+              <div class="filter-actions-right">
+                <button class="btn btn-sm btn-outline" id="reset-filters-btn">Reset Filters</button>
+                <button class="btn btn-sm btn-primary" id="alerts-trigger-scenario-btn">Inject Test Incident</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alerts Table Card -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Incident Telemetry Log</h3>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="data-table" id="alerts-full-table" aria-label="Alerts Log Table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Rank</th>
+                      <th scope="col">ID</th>
+                      <th scope="col">Severity</th>
+                      <th scope="col">Zone</th>
+                      <th scope="col">Detection Type</th>
+                      <th scope="col">Observed Values</th>
+                      <th scope="col">Est. Excess Water</th>
+                      <th scope="col">Detected At</th>
+                      <th scope="col">Status</th>
+                      <th scope="col" class="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="alerts-table-tbody">
+                    <!-- Rendered dynamically -->
+                  </tbody>
+                </table>
+
+                <!-- Empty State -->
+                <div id="alerts-filter-empty" class="empty-state hidden">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <h4>No Alerts Found</h4>
+                  <p>No incidents match the active search query or filter criteria.</p>
+                  <button class="btn btn-sm btn-outline mt-2" id="alerts-empty-reset-btn">Reset Filter Options</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= VIEW 4: WATER INSIGHTS ================= -->
+        <section id="view-insights" class="view-panel" role="tabpanel" aria-labelledby="nav-tab-insights">
+          <!-- Insights Summary Strip -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Est. Water Consumption</span>
+                <span class="stat-icon-wrap teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value" id="insights-total-water">-- Litres</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Estimated Avoidable Loss</span>
+                <span class="stat-icon-wrap rose">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value text-rose" id="insights-total-loss">-- Litres</div>
+              <div class="stat-meta" id="insights-loss-pct">--% of total consumption</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Estimated Financial Loss</span>
+                <span class="stat-icon-wrap amber">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value text-amber" id="insights-financial-loss">--</div>
+              <div class="stat-meta" id="insights-cost-rate-meta">At estimated tariff ₹25.00/kL</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <span class="stat-label">Suspicious Events</span>
+                <span class="stat-icon-wrap navy">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                </span>
+              </div>
+              <div class="stat-value" id="insights-incident-count">--</div>
+              <div class="stat-meta" id="insights-resolved-ratio">0 resolved / 0 total</div>
+            </div>
+          </div>
+
+          <!-- Analytical Insights Cards -->
+          <div class="insights-explanation-deck">
+            <div class="insight-card highlight-card">
+              <div class="insight-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+              <div class="insight-card-content">
+                <h4 class="insight-title" id="insight-primary-title">Top leak: Hostel Block A</h4>
+                <p class="insight-text" id="insight-primary-desc">
+                  Overnight flow is far above normal. Check flapper seals and risers first.
+                </p>
+                <div class="insight-meta-tags">
+                  <span class="tag text-rose" id="insight-loss-highlight">Est. Loss: 2,250 L</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-icon-wrap teal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <div class="insight-card-content">
+                <h4 class="insight-title">Peak hours</h4>
+                <p class="insight-text" id="insight-peak-desc">
+                  Showers <strong>07:15–08:45</strong> · Kitchen <strong>11:45–13:30</strong> and <strong>18:30–20:45</strong>. Normal demand, not waste.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row in Insights -->
+          <div class="grid-2-col">
+            <div class="card chart-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">24-Hour Comparative Flow Trajectory</h3>
+                </div>
+              </div>
+              <div class="card-body chart-body">
+                <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                  <canvas id="insightsTrajectoryChart"></canvas>
+                  <div class="chart-fallback hidden" id="trajectory-chart-fallback">
+                    <p>Trajectory chart fallback preview.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Estimated Water Loss by Zone</h3>
+                </div>
+              </div>
+              <div class="card-body chart-body">
+                <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                  <canvas id="insightsLossBarChart"></canvas>
+                  <div class="chart-fallback hidden" id="lossbar-chart-fallback">
+                    <p>Loss breakdown chart fallback preview.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone Comparison Audit Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Zone Efficiency Audit</h3>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="data-table" id="insights-zone-table" aria-label="Zone comparison audit">
+                  <thead>
+                    <tr>
+                      <th scope="col">Zone</th>
+                      <th scope="col">Total Consumption</th>
+                      <th scope="col">Est. Suspicious Loss</th>
+                      <th scope="col">Loss Ratio</th>
+                      <th scope="col">Night Baseline Avg</th>
+                      <th scope="col">Peak Flow Observed</th>
+                      <th scope="col">Health Rating</th>
+                    </tr>
+                  </thead>
+                  <tbody id="insights-zone-tbody">
+                    <!-- Populated via script -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ================= VIEW 5: SETTINGS ================= -->
+        <section id="view-settings" class="view-panel" role="tabpanel" aria-labelledby="nav-tab-settings">
+          <div class="settings-grid">
+            <!-- Detection Engine Thresholds -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Detection Thresholds</h3>
+                </div>
+              </div>
+              <div class="card-body">
+                <form id="settings-thresholds-form">
+                  <div class="form-group">
+                    <div class="form-label-wrap">
+                      <label for="setting-night-threshold" class="form-label">Nighttime Baseline Trigger
+                        Threshold</label>
+                      <span class="threshold-value-display" id="display-night-threshold">3.0 L/min</span>
+                    </div>
+                    <input type="range" id="setting-night-threshold" class="form-range" min="0.5" max="15.0" step="0.5"
+                      value="3.0">
+                  </div>
+
+                  <div class="form-group">
+                    <div class="form-label-wrap">
+                      <label for="setting-night-duration" class="form-label">Sustained Duration Requirement
+                        (Night)</label>
+                      <span class="threshold-value-display" id="display-night-duration">15 mins</span>
+                    </div>
+                    <input type="range" id="setting-night-duration" class="form-range" min="5" max="60" step="5"
+                      value="15">
+                  </div>
+
+                  <div class="form-group">
+                    <div class="form-label-wrap">
+                      <label for="setting-ceiling-threshold" class="form-label">Daytime High-Flow Runaway
+                        Ceiling</label>
+                      <span class="threshold-value-display" id="display-ceiling-threshold">45.0 L/min</span>
+                    </div>
+                    <input type="range" id="setting-ceiling-threshold" class="form-range" min="20.0" max="80.0"
+                      step="5.0" value="45.0">
+                  </div>
+
+                  <div class="form-group">
+                    <div class="form-label-wrap">
+                      <label for="setting-ceiling-duration" class="form-label">High-Flow Sustained Duration Requirement</label>
+                      <span class="threshold-value-display" id="display-ceiling-duration">20 mins</span>
+                    </div>
+                    <input type="range" id="setting-ceiling-duration" class="form-range" min="5" max="60"
+                      step="5" value="20">
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="form-group">
+                      <label for="setting-night-start" class="form-label">Night Window Start</label>
+                      <input type="time" id="setting-night-start" class="form-input" value="23:00">
+                    </div>
+                    <div class="form-group">
+                      <label for="setting-night-end" class="form-label">Night Window End</label>
+                      <input type="time" id="setting-night-end" class="form-input" value="05:30">
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="save-thresholds-btn">Save Detection
+                      Thresholds</button>
+                    <button type="button" class="btn btn-outline" id="default-thresholds-btn">Reset to Heuristic
+                      Defaults</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Units, Rates & Display Settings -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Units &amp; Cost</h3>
+                </div>
+              </div>
+              <div class="card-body">
+                <form id="settings-units-form">
+                  <div class="form-group">
+                    <label for="setting-unit-select" class="form-label">Display Flow Rate Unit</label>
+                    <select id="setting-unit-select" class="form-select">
+                      <option value="lpm" selected>Litres per minute (L/min) — Metric Standard</option>
+                      <option value="m3h">Cubic meters per hour (m³/h)</option>
+                      <option value="gpm">US Gallons per minute (GPM)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setting-tariff-rate" class="form-label">Estimated Water Cost (₹ per 1,000 Litres / kL)</label>
+                    <input type="number" id="setting-tariff-rate" class="form-input" min="0.5" max="500" step="0.5"
+                      value="25">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="setting-sim-speed" class="form-label">Simulation Update Interval</label>
+                    <select id="setting-sim-speed" class="form-select">
+                      <option value="1000">Fast (1.0 second per telemetry sample)</option>
+                      <option value="2500" selected>Standard (2.5 seconds per sample)</option>
+                      <option value="5000">Deliberate (5.0 seconds per sample)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="save-units-btn">Save Display &amp;
+                      Tariffs</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Demo Lifecycle & Reset Controls -->
+            <div class="card danger-card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title text-rose">Reset & Storage</h3>
+                </div>
+              </div>
+              <div class="card-body">
+                <p class="storage-desc">
+                  HydroSense Sentinel stores alert statuses, threshold overrides, and investigation notes in your
+                  browser's <code>localStorage</code>.
+                </p>
+
+                <div class="danger-actions-list">
+                  <div class="danger-action-row">
+                    <div>
+                      <strong>Reset Demo Scenarios</strong>
+                      <p>Reloads default deterministic datasets and normalizes flow readings.</p>
+                    </div>
+                    <button class="btn btn-outline" id="btn-reset-demo-data">Reset Demo Data</button>
+                  </div>
+
+                  <div class="danger-action-row">
+                    <div>
+                      <strong>Clear Local Storage Cache</strong>
+                      <p>Wipes all saved alert states, custom thresholds, and preferences.</p>
+                    </div>
+                    <button class="btn btn-outline btn-rose" id="btn-clear-local-storage">Clear Local Storage</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Assumptions & Limitations Guide -->
+            <div class="card doc-card">
+              <div class="card-header">
+                <h3 class="card-title">Assumptions (tap to expand)</h3>
+              </div>
+              <div class="card-body">
+                <div class="doc-item">
+                  <div class="doc-heading">1. Loss Calculation Formula</div>
+                  <p class="doc-body">
+                    $\text{Estimated Loss (L)} = \int_{t_0}^{t_1} (\text{Flow}_{\text{observed}} -
+                    \text{Baseline}_{\text{nominal}}) \, dt$.
+                    Flow (L/min) × duration (min) = Litres; each simulation tick represents 1 simulated minute. Only the net excess above expected operational baseline is tallied, as an estimate from simulated data. Water utilized
+                    during normal operational cycles is excluded.
+                  </p>
+                </div>
+
+                <div class="doc-item">
+                  <div class="doc-heading">2. Heuristic Rules vs. Machine Learning</div>
+                  <p class="doc-body">
+                    This prototype uses deterministic heuristic rule evaluations (e.g., duration-checked baseline
+                    excursions and flat-line variance filters) designed for transparency and immediate facility action.
+                    It does not employ black-box ML.
+                  </p>
+                </div>
+
+                <div class="doc-item">
+                  <div class="doc-heading">3. Simulated Data Notice</div>
+                  <p class="doc-body">
+                    Data streams are simulated client-side using deterministic diurnal templates and stochastic Gaussian
+                    noise. No physical plumbing hardware or IoT meters are connected.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+
+  <!-- ================= ALERT DETAIL & INVESTIGATION MODAL ================= -->
+  <dialog id="alert-modal" class="modal-dialog" aria-labelledby="modal-alert-id">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="badge" id="modal-severity-badge">CRITICAL</span>
+          <span class="badge-priority p-urgent" id="modal-priority-badge">#1 Priority</span>
+          <h3 id="modal-alert-id" class="modal-title">Alert ALT-1042</h3>
+          <span class="modal-zone-tag" id="modal-zone-tag">Hostel Block A</span>
+        </div>
+        <button class="modal-close-btn" id="modal-close-btn" aria-label="Close dialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Detection Pattern & Reason -->
+        <div class="modal-section highlight-box">
+          <div class="modal-section-title">Detection Pattern &amp; Why It's Concerning</div>
+          <p class="modal-pattern-text" id="modal-observed-pattern">--</p>
+          <div class="modal-reason-box" id="modal-detection-reason">--</div>
+        </div>
+
+        <!-- Metric Grid -->
+        <div class="modal-metric-grid">
+          <div class="modal-metric-item">
+            <span class="m-label">Detection Type</span>
+            <span class="m-val" id="modal-detection-type">Sustained Nighttime Flow</span>
+          </div>
+          <div class="modal-metric-item">
+            <span class="m-label">Time Detected</span>
+            <span class="m-val" id="modal-time-detected">02:35 AM</span>
+          </div>
+          <div class="modal-metric-item">
+            <span class="m-label">Duration Elapsed</span>
+            <span class="m-val" id="modal-duration">45 minutes</span>
+          </div>
+          <div class="modal-metric-item">
+            <span class="m-label">Est. Potential Excess Water</span>
+            <span class="m-val text-rose" id="modal-est-loss">562.5 Litres</span>
+          </div>
+        </div>
+
+        <!-- Observed Telemetry Breakdown -->
+        <div class="modal-section">
+          <div class="modal-section-title">Observed Telemetry Values (Simulated)</div>
+          <div class="modal-metric-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 8px;">
+            <div class="modal-metric-item">
+              <span class="m-label">Observed Flow Rate</span>
+              <span class="m-val" id="modal-obs-current">13.7 L/min</span>
+            </div>
+            <div class="modal-metric-item">
+              <span class="m-label">Expected Nominal Baseline</span>
+              <span class="m-val" id="modal-obs-baseline">1.2 L/min</span>
+            </div>
+            <div class="modal-metric-item">
+              <span class="m-label">Excess Rate Delta</span>
+              <span class="m-val text-rose" id="modal-obs-excess">+12.5 L/min</span>
+            </div>
+          </div>
+          <div class="priority-breakdown-box" id="modal-priority-formula-box">
+            <strong>Transparent Priority Rule:</strong> <span id="modal-priority-explanation">Ranked based on Unresolved Status + Critical Severity + Estimated Excess Volume + Duration.</span>
+          </div>
+        </div>
+
+        <!-- Suggested Action -->
+        <div class="modal-section">
+          <div class="modal-section-title">Recommended Inspection Protocol</div>
+          <div class="action-recommendation" id="modal-suggested-action">
+            Check toilet cisterns on 3rd floor washrooms for stuck flapper valves.
+          </div>
+        </div>
+
+        <!-- Investigation Status Workflow -->
+        <div class="modal-section">
+          <div class="modal-section-title">Investigation Status Workflow</div>
+          <div class="workflow-actions-wrap">
+            <button class="btn btn-outline" id="modal-btn-ack">Acknowledge</button>
+            <button class="btn btn-outline btn-warning" id="modal-btn-investigate">Mark Investigating</button>
+            <button class="btn btn-primary" id="modal-btn-resolve">Mark Resolved</button>
+            <button class="btn btn-outline" id="modal-btn-reopen">Reopen Alert</button>
+          </div>
+        </div>
+
+        <!-- Inspection Notes -->
+        <div class="modal-section">
+          <label for="modal-notes-input" class="modal-section-title">Maintenance Log &amp; Staff Notes</label>
+          <textarea id="modal-notes-input" class="form-textarea" rows="3"
+            placeholder="Enter findings (e.g., 'Replaced broken siphon diaphragm in unit 304')..."></textarea>
+          <button class="btn btn-sm btn-outline mt-2" id="modal-save-notes-btn">Save Note to Local Record</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="modal-footer-status">Current Status: <strong id="modal-current-status">New</strong></span>
+        <button class="btn btn-outline" id="modal-footer-close">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+
+  <!-- ================= CONFIRMATION DIALOG ================= -->
+  <dialog id="confirm-dialog" class="modal-dialog modal-sm" aria-labelledby="confirm-dialog-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="confirm-dialog-title" class="modal-title">Confirm Action</h3>
+        <button class="modal-close-btn" id="confirm-dialog-close" aria-label="Close dialog">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-dialog-message">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="confirm-dialog-cancel">Cancel</button>
+        <button class="btn btn-primary btn-rose" id="confirm-dialog-confirm">Confirm</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Main Application Script -->
+  <script src="api.js"></script>
+  <script src="fx.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
